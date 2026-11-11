@@ -8,7 +8,7 @@ A lightweight, native macOS instant selection translator & search tool built wit
 
 - **Zero Clipboard Pollution**: Reads selected text strictly via macOS Accessibility API (`AXUIElement`) and automatically wakes up accessibility trees for Chrome/Electron apps. Your clipboard history (Paste, Raycast, Alfred, etc.) stays 100% clean.
 - **Instant Translation on Selection**: Select text with your mouse (drag or double-click) and release — the translation popover appears immediately without extra button clicks.
-- **Auto Bi-directional Translation**: Automatically translates Chinese text into English, and any other language into Simplified Chinese via Google Translate.
+- **Auto Bi-directional Translation & `中/英` Toggle**: Automatically translates Chinese text into English, and any other language into Simplified Chinese via Google Translate. For mixed Chinese/English text, click the **`中/英`** button on the popover to switch target language between Chinese and English on the fly.
 - **Click Card to Copy**: Click anywhere on the translation card to copy the translated result to the clipboard and dismiss the popover, or click `🔍 搜原文` to search the original text on Google.
 - **System Proxy Support**: Uses native `URLSession.shared`, automatically inheriting your macOS system HTTP/HTTPS/SOCKS proxy settings with zero configuration.
 - **Non-Activating Floating HUD**: Never steals window focus from your active app.

@@ -16,13 +16,14 @@ enum Logic {
     }
 
     @discardableResult
-    static func translate(_ text: String, completion: @escaping (Result<String, Error>) -> Void) -> URLSessionDataTask {
+    static func translate(_ text: String, to target: String? = nil, completion: @escaping (Result<String, Error>) -> Void) -> URLSessionDataTask {
         // shortcut: free translate.googleapis.com gtx endpoint, switch to official API key if rate-limited on heavy batch use
+        let tl = target ?? targetLang(for: text)
         var comps = URLComponents(string: "https://translate.googleapis.com/translate_a/single")!
         comps.queryItems = [
             URLQueryItem(name: "client", value: "gtx"),
             URLQueryItem(name: "sl", value: "auto"),
-            URLQueryItem(name: "tl", value: targetLang(for: text)),
+            URLQueryItem(name: "tl", value: tl),
             URLQueryItem(name: "dt", value: "t"),
             URLQueryItem(name: "q", value: text)
         ]
@@ -162,6 +163,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var permMenuItem: NSMenuItem!
     private var currentText = ""
     private var translatedText = ""
+    private var currentTargetLang = "zh-CN"
+    private var currentAnchor: NSPoint = .zero
     private var isEnabled = true
     private var downPoint: NSPoint = .zero
     private var downTime: TimeInterval = 0
@@ -293,11 +296,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.07, execute: item)
     }
 
-    private func startInstantTranslate(at point: NSPoint) {
+    private func startInstantTranslate(at point: NSPoint, targetLang: String? = nil) {
         activeTask?.cancel()
+        currentAnchor = point
+        currentTargetLang = targetLang ?? Logic.targetLang(for: currentText)
         showTranslationView(text: "正在翻译…", isDone: false, near: point)
         let query = currentText
-        activeTask = Logic.translate(query) { [weak self] res in
+        let tl = currentTargetLang
+        activeTask = Logic.translate(query, to: tl) { [weak self] res in
             guard let self = self, self.panel.isVisible else { return }
             switch res {
             case .success(let output):
@@ -332,7 +338,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         let textH = min(max(ceil(rect.height) + 4, 22), 260)
         let bottomH: CGFloat = isDone ? 24 : 0
-        let totalW = max(min(ceil(rect.width) + pad * 2 + 8, maxW), 160)
+        let totalW = max(min(ceil(rect.width) + pad * 2 + 8, maxW), 220)
         let totalH = textH + pad * 2 + bottomH
 
         let box = makeContainer(size: NSSize(width: totalW, height: totalH))
@@ -360,9 +366,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let hint = NSTextField(labelWithString: "点击复制译文")
             hint.font = .systemFont(ofSize: 11)
             hint.textColor = NSColor.white.withAlphaComponent(0.55)
-            hint.frame = NSRect(x: pad, y: 6, width: 120, height: 16)
+            hint.frame = NSRect(x: pad, y: 6, width: 90, height: 16)
             box.addSubview(hint)
             self.hintField = hint
+
+            let langBtn = NSButton(frame: NSRect(x: totalW - pad - 122, y: 4, width: 50, height: 20))
+            langBtn.title = "中/英"
+            langBtn.bezelStyle = .recessed
+            langBtn.isBordered = false
+            langBtn.font = .systemFont(ofSize: 11, weight: .medium)
+            langBtn.contentTintColor = NSColor.white.withAlphaComponent(0.85)
+            langBtn.target = self
+            langBtn.action = #selector(onToggleLang)
+            langBtn.toolTip = currentTargetLang == "en" ? "切换为翻译成中文" : "切换为翻译成英文"
+            box.addSubview(langBtn)
 
             let searchBtn = NSButton(frame: NSRect(x: totalW - pad - 68, y: 4, width: 68, height: 20))
             searchBtn.title = "🔍 搜原文"
@@ -376,6 +393,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         placePanel(content: box, near: anchor)
+    }
+
+    @objc private func onToggleLang() {
+        let nextLang = (currentTargetLang == "en") ? "zh-CN" : "en"
+        startInstantTranslate(at: currentAnchor, targetLang: nextLang)
     }
 
     @objc private func onCopyCard() {
