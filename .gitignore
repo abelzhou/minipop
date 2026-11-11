@@ -1,0 +1,8 @@
+.DS_Store
+*.app/
+*.iconset/
+*.zip
+*.dmg
+.build/
+*.o
+*.dSYM/
