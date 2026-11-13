@@ -5,8 +5,21 @@ try? FileManager.default.createDirectory(atPath: iconset, withIntermediateDirect
 
 func makeIcon(size: Int, scale: Int) {
     let px = size * scale
-    let img = NSImage(size: NSSize(width: px, height: px))
-    img.lockFocus()
+    guard let rep = NSBitmapImageRep(
+        bitmapDataPlanes: nil,
+        pixelsWide: px,
+        pixelsHigh: px,
+        bitsPerSample: 8,
+        samplesPerPixel: 4,
+        hasAlpha: true,
+        isPlanar: false,
+        colorSpaceName: .deviceRGB,
+        bytesPerRow: 0,
+        bitsPerPixel: 0
+    ), let ctx = NSGraphicsContext(bitmapImageRep: rep) else { return }
+
+    NSGraphicsContext.saveGraphicsState()
+    NSGraphicsContext.current = ctx
 
     let inset = CGFloat(px) * 0.08
     let rect = NSRect(x: inset, y: inset, width: CGFloat(px) - inset * 2, height: CGFloat(px) - inset * 2)
@@ -32,10 +45,8 @@ func makeIcon(size: Int, scale: Int) {
     )
     str.draw(in: sRect, withAttributes: attrs)
 
-    img.unlockFocus()
-    if let tiff = img.tiffRepresentation,
-       let rep = NSBitmapImageRep(data: tiff),
-       let png = rep.representation(using: .png, properties: [:]) {
+    NSGraphicsContext.restoreGraphicsState()
+    if let png = rep.representation(using: .png, properties: [:]) {
         let name = scale == 1 ? "icon_\(size)x\(size).png" : "icon_\(size)x\(size)@2x.png"
         try? png.write(to: URL(fileURLWithPath: "\(iconset)/\(name)"))
     }

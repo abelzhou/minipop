@@ -16,7 +16,7 @@ enum Logic {
     }
 
     @discardableResult
-    static func translate(_ text: String, to target: String? = nil, completion: @escaping (Result<String, Error>) -> Void) -> URLSessionDataTask {
+    static func translate(_ text: String, to target: String? = nil, completion: @escaping @MainActor @Sendable (Result<String, Error>) -> Void) -> URLSessionDataTask {
         // shortcut: free translate.googleapis.com gtx endpoint, switch to official API key if rate-limited on heavy batch use
         let tl = target ?? targetLang(for: text)
         var comps = URLComponents(string: "https://translate.googleapis.com/translate_a/single")!
@@ -74,6 +74,7 @@ final class FloatingPanel: NSPanel {
 }
 
 // MARK: - Selection Reader (Pure AX API, NEVER touches NSPasteboard or simulates Cmd+C)
+@MainActor
 enum SelectionReader {
     static func enableEnhancedAXForFrontApp() {
         guard let frontApp = NSWorkspace.shared.frontmostApplication else { return }
@@ -157,6 +158,7 @@ enum SelectionReader {
 }
 
 // MARK: - App Delegate & UI
+@MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let panel = FloatingPanel()
     private var statusItem: NSStatusItem!
@@ -180,15 +182,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func requestAccessibilityPermission() {
-        let opts = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+        let opts = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
         _ = AXIsProcessTrustedWithOptions(opts)
         updateStatusIcon()
     }
 
     @objc private func openAccessibilitySettings() {
-        let opts = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+        let opts = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
         _ = AXIsProcessTrustedWithOptions(opts)
-        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+        if let url = URL(string: "x-apple.systempreferences:com.apple.Settings.PrivacySecurity.extension?Privacy_Accessibility") {
             NSWorkspace.shared.open(url)
         }
     }

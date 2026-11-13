@@ -1,0 +1,35 @@
+name: Release MiniPop
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build MiniPop.app and DMG
+        run: ./build.sh --dmg
+
+      - name: Package ZIP of MiniPop.app
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          ditto -c -k --sequesterRsrc --keepParent MiniPop.app "MiniPop-${VERSION}-macOS.zip"
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          gh release create "${GITHUB_REF_NAME}" \
+            "MiniPop-${VERSION}-macOS.dmg" \
+            "MiniPop-${VERSION}-macOS.zip" \
+            --title "MiniPop ${GITHUB_REF_NAME}" \
+            --generate-notes
